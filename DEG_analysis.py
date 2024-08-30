@@ -66,7 +66,12 @@ def generate_heatmap_for_conditions(condition1, condition2):
     vmin = vmin if vmin < 0 else -np.abs(vmin)  # Ensure vmin is negative
     vmax = vmax if vmax > 0 else np.abs(vmax)   # Ensure vmax is positive
 
+    # Adjust the center of the colormap to be at zero
     midpoint = 1 - vmax / (vmax + abs(vmin))
+    cmap = plt.cm.bwr
+    norm = plt.Normalize(vmin=vmin, vmax=vmax)
+
+    # Define the color mapping correctly with x=0 and x=1
     colors = [(0, "blue"), (midpoint, "white"), (1, "red")]
     cmap = plt.cm.colors.LinearSegmentedColormap.from_list("", colors)
     
@@ -80,9 +85,11 @@ def generate_heatmap_for_conditions(condition1, condition2):
     # Plot the heatmap using seaborn
     sns.set(font_scale=1.7)
     plt.figure(figsize=(10, 50), facecolor='white')
-    ax = sns.heatmap(heatmap_data, cmap=cmap, center=0, linecolor='lightgray', linewidths=0.5)
+    ax = sns.heatmap(heatmap_data, cmap='bwr', center=0, linecolor='lightgray', linewidths=0.5)
+    #ax = sns.heatmap(heatmap_data, cmap=cmap, center=0, linecolor='lightgray', linewidths=0.5)
     ax.set_facecolor('white')
-    
+
+    # Set the colorbar label
     colorbar = ax.collections[0].colorbar
     colorbar.set_label('logFC')
     
