@@ -1,5 +1,5 @@
 This repository contains the code used in my Master's thesis: 
-Exploring Characteristics and Interactions of Chronic Obstructive Pulmonary Disease (COPD) and Idiopathic Pulmonary Fibrosis (IPF): An Integrated Analysis Using Single-Cell RNA-seq Data. (Yonsei University, Seoul, South Korea) 
+- Exploring Characteristics and Interactions of Chronic Obstructive Pulmonary Disease (COPD) and Idiopathic Pulmonary Fibrosis (IPF): An Integrated Analysis Using Single-Cell RNA-seq Data. (Yonsei University, Seoul, South Korea) 
 
 scRNA-seq Preprocessing:
 - scRNA_preprocessing.py (scRNA_preprocessing.ipynb): Scripts for preprocessing the scRNA-seq data.
