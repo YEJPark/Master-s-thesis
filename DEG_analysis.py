@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 # Load your data
-adata = sc.read('GSE136831_double_3.h5ad')
+adata = sc.read('./result/GSE136831_double_3.h5ad')
 
 # Remove cells with 'Multiplet' category in 'CellType_Category'
 adata = adata[~(adata.obs['CellType_Category'] == 'Multiplet')]
@@ -56,7 +56,7 @@ def generate_heatmap_for_conditions(condition1, condition2):
 
     # Create a DataFrame for the selected genes
     df = pd.DataFrame(data, columns=['CellType_Category', 'Gene', 'LogFC', 'P-value', 'Adjusted P-value'])
-    filename_csv = f"results_DEGs_filtered_{condition1}_vs_{condition2}.csv"
+    filename_csv = f"./result/results_DEGs_filtered_{condition1}_vs_{condition2}.csv"
     df.to_csv(filename_csv, index=False)
 
     # Prepare the colormap
@@ -74,6 +74,9 @@ def generate_heatmap_for_conditions(condition1, condition2):
     sorted_df = df.sort_values(by=['CellType_Category'])
     heatmap_data = sorted_df.pivot(index='Gene', columns='CellType_Category', values='LogFC')
 
+    # Set the style for seaborn
+    sns.set_style("whitegrid", {'axes.grid': True, 'grid.color': 'lightgray'})
+    
     # Plot the heatmap using seaborn
     sns.set(font_scale=1.7)
     plt.figure(figsize=(10, 50), facecolor='white')
@@ -84,12 +87,12 @@ def generate_heatmap_for_conditions(condition1, condition2):
     colorbar.set_label('logFC')
     
     plt.title(f"Heatmap of DEGs: {condition1} vs {condition2}")
-    plt.savefig(f"gene_heatmap_filtered_{condition1}_vs_{condition2}.png", dpi=300, bbox_inches='tight')
+    plt.savefig(f"./result/gene_heatmap_filtered_{condition1}_vs_{condition2}.png", dpi=300, bbox_inches='tight')
 
     # Generate and save Scanpy's heatmap with gene labels
-    filename_png = f"DEGs_heatmap_filtered_{condition1}_vs_{condition2}.png"
+    filename_png = f"./result/DEGs_heatmap_filtered_{condition1}_vs_{condition2}.png"
     sc.pl.rank_genes_groups_heatmap(adata_filtered, n_genes=20, groups=categories, use_raw=False, swap_axes=True, vmin=vmin, vmax=vmax, cmap='bwr', figsize=(18, 10), show_gene_labels=True, show=False, save=filename_png)
-
+    
 # Generate heatmap for Control vs COPD
 generate_heatmap_for_conditions('Control', 'COPD')
 
