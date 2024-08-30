@@ -3,6 +3,7 @@ import scanpy as sc
 import torch
 import scvi
 import matplotlib.pyplot as plt
+import seaborn as sns 
 
 ### Step 1: Load and preprocess the data
 
@@ -29,6 +30,9 @@ adata.write('./result/processed_adata.h5ad')
 
 ### Step 2: Doublet Removal (optional but recommended)
 
+# Select highly variable genes
+sc.pp.highly_variable_genes(adata, n_top_genes=2000, subset=True, flavor='seurat_v3')
+
 # Set the desired GPU
 torch.cuda.set_device(0)
 
@@ -44,7 +48,9 @@ solo.train()
 # Predict doublets using SOLO
 df = solo.predict()
 df['prediction'] = solo.predict(soft=False)
+df.groupby('prediction').count()
 df['dif'] = df.doublet - df.singlet
+sns.displot(df[df.prediction == 'doublet'], x='dif')
 
 # Identify and remove doublets
 doublets = df[(df.prediction == 'doublet') & (df.dif > 1)]
@@ -54,7 +60,7 @@ adata = adata[~adata.obs.doublet]
 ### Step 3: Quality Control
 
 # Identify mitochondrial and ribosomal genes
-adata.var['mt'] = adata.var.index.str.startswith('MT-')
+adata.var['mt'] = adata.var_names.str.startswith('MT-')
 ribo_url = "http://software.broadinstitute.org/gsea/msigdb/download_geneset.jsp?geneSetName=KEGG_RIBOSOME&fileType=txt"
 ribo_genes = pd.read_table(ribo_url, skiprows=2, header=None)
 adata.var['ribo'] = adata.var_names.isin(ribo_genes[0].values)
@@ -62,18 +68,28 @@ adata.var['ribo'] = adata.var_names.isin(ribo_genes[0].values)
 # Calculate quality control metrics
 sc.pp.calculate_qc_metrics(adata, qc_vars=['mt', 'ribo'], percent_top=None, log1p=False, inplace=True)
 
+adata.var.sort_values('n_cells_by_counts')
+
 # Filter genes and cells based on QC metrics
 sc.pp.filter_genes(adata, min_cells=3)
-upper_lim = np.quantile(adata.obs.n_genes_by_counts.values, .98)
-adata = adata[adata.obs.n_genes_by_counts < upper_lim]
-adata = adata[adata.obs.pct_counts_mt < 20]
-adata = adata[adata.obs.pct_counts_ribo < 2]
+# adata.var.sort_values('n_cells_by_counts')
+# adata.obs.sort_values('n_genes_by_counts')
+# sc.pp.filter_cells(adata, min_genes=200)
+
+# Visualize QC metrics
+sc.pl.violin(adata, ['n_genes_by_counts', 'total_counts', 'pct_counts_mt', 'pct_counts_ribo'], jitter=0.4, multi_panel=True)
+
+# Filter out outlier cells based on QC metrics
+upper_lim = np.quantile(adata.obs['n_genes_by_counts'], 0.98)
+adata = adata[adata.obs['n_genes_by_counts'] < upper_lim]
+adata = adata[adata.obs['pct_counts_mt'] < 20]
+adata = adata[adata.obs['pct_counts_ribo'] < 2]
 
 ### Step 4: Normalization
 
 # Normalize to 10,000 UMI per cell and log transform
-sc.pp.normalize_total(adata, target_sum=1e4)
-sc.pp.log1p(adata)
+sc.pp.normalize_total(adata, target_sum=1e4) # normalize every cell to 10,000 UMI
+sc.pp.log1p(adata)  # change to log counts
 adata.raw = adata  # Save the original data
 
 # Save the processed AnnData object
@@ -98,7 +114,8 @@ sc.pl.umap(adata)
 
 # Perform Leiden clustering
 sc.tl.leiden(adata, resolution=0.5)
-sc.pl.umap(adata, color=['leiden'])
+sc.pl.umap(adata, color = ['leiden'])
+sc.pl.umap(adata, color = ['leiden'], frameon = False, legend_loc = "on data")
 
 ### Step 7: Marker Gene Identification
 
@@ -116,6 +133,10 @@ for group in markers['group'].unique():
 # Print top 5 markers for each group
 for group, top_markers in group_markers.items():
     print(f"Group {group} markers: {', '.join(top_markers)}")
+
+# sc.pl.umap(adata, color = ['EPCAM', 'MUC1'], frameon = False, layer = 'scvi_normalized', vmax = 5)
+# sc.pl.umap(adata, color = ['AQP1'], frameon = False, vmax = 5)
+# plt.savefig('filename_2.png')
 
 ### Step 8: Cell Type Annotation
 
